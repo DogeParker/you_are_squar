@@ -5,6 +5,7 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class Game extends JPanel implements KeyListener, Runnable {
+	private Level1 level1 = new Level1();
 	private final int SCREEN_WIDTH = 800;  // Window width
     private final int SCREEN_HEIGHT = 600; // Window height
     
@@ -16,13 +17,13 @@ public class Game extends JPanel implements KeyListener, Runnable {
     private double velocityX = 0;
     private double velocityY = 0;
     private double acceleration = 0.5;  // Acceleration
+    private double gravity = 0.3; //defining gravity
     private double maxSpeed = 5;  // Max speed
     private double friction = 0.1;  // Friction
 
     private boolean movingRight = false;
     private boolean movingLeft = false;
     
-    private boolean jumping = false;
     private boolean onGround = false;
     
     private boolean aimMode = false;
@@ -86,7 +87,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
         // Update position
         x += velocityX;
 
-        // **Collision Detection with Walls**
+        // collision detection in general
         if (x < 0) {
             x = 0;
             velocityX = 0; // Stop movement at the left wall
@@ -95,8 +96,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
             x = SCREEN_WIDTH - width;
             velocityX = 0; // Stop movement at the right wall
         }
-        
-        //p1 Collision detection with screen floor
+        // floor detection
         if (y + height >= SCREEN_HEIGHT) {
             y = SCREEN_HEIGHT - height;
             velocityY = 0;
@@ -105,53 +105,60 @@ public class Game extends JPanel implements KeyListener, Runnable {
         else {
         	onGround = false;
         }
-        // jump force upward code
-        if (onGround && jumping) {
-        	velocityY = -7;
-        	onGround = false;
+        for (Block i: level1.getBlocks()) {
+        	if (x + width > i.getBlockX() && x + width < i.getBlockX()+10) {
+        		velocityX = 0;
+        	}
         }
-        // controls slowing down of jump and downwards falling
-        velocityY += acceleration;
-        // applying gravity
-        y += velocityY;
-        // setting jump to false, as the force upwards has already been applied
-        jumping = false;
-        
+        // jump force upward code
         if (!(onGround) && aimMode) {
         	aimMode = false;
         } else if (onGround && aimMode) {
         	aimBallX = x + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
         	aimBallY = y + (height / 2)-10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
+        	if (aimBallX<0) aimBallX = 0;
+        	else if (aimBallX>SCREEN_WIDTH-width) aimBallX = SCREEN_WIDTH-width;
         	if (aimAngle >= 180) {
         		aimSpeed = -aimSpeed;
         	} else if (aimAngle <= 0) {
         		aimSpeed = -aimSpeed;
         	}
         	aimAngle += aimSpeed;
+        	
         } else if (onGround && aimLocked) {
         	// perform similar action to aimMode, but radius oscillates rather than angle
         	aimMode = false;
         	aimBallX = x + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
         	aimBallY = y + (height / 2)-10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
+        	if (aimBallX<0) aimBallX = 0;
+        	else if (aimBallX>SCREEN_WIDTH-width) aimBallX = SCREEN_WIDTH-width;
         	if (aimRadius >= 150) {
         		aimSpeed = -aimSpeed;
         	} else if (aimRadius <= 50) {
         		aimSpeed = -aimSpeed;
         	}
+        	onGround = false;
         	aimRadius += aimSpeed;
         } if (onGround && shoot) {
         	velocityX = (int) (aimRadius * 0.2) * (Math.cos(Math.toRadians(aimAngle)));
-        	velocityY = (int) -(aimRadius * Math.sin(Math.toRadians(aimAngle)));
+        	velocityY = (int) -(aimRadius * 0.1) * (Math.sin(Math.toRadians(aimAngle)));
         	System.out.println(velocityY);
         	onGround = false;
         	shoot = false;
-        	jumping = true;
+        	aimAngle = 180;
+            aimRadius = 50;
         }
+        // controls slowing down of jump and downwards falling
+        velocityY += gravity;
+        // applying gravity
+        y += velocityY;
+        
     }
 
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
+        level1.drawLevel(g);
         if (aimMode||aimLocked) {
         	g.setColor(Color.BLUE);
         	g.fillOval(aimBallX, aimBallY, 20, 20);
@@ -162,39 +169,19 @@ public class Game extends JPanel implements KeyListener, Runnable {
 
     @Override
     public void keyPressed(KeyEvent e) {
-    	if (e.getKeyCode() == KeyEvent.VK_L) { // Press "L" to test
-    	    velocityY = -15;  // Instant strong jump
-    	    onGround = false;
+    	if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+    	    if (aimLocked) {
+    	        aimLocked = false;
+    	        shoot = true;
+    	    } else {
+    	        aimMode = true;
+    	    }
+    	    repaint();
     	}
-
-        if (e.getKeyCode() == KeyEvent.VK_D) {
-            movingRight = true;
-        }
-        if (e.getKeyCode() == KeyEvent.VK_A) {
-            movingLeft = true;
-        }
-        if (e.getKeyCode() == KeyEvent.VK_W) {
-        	jumping = true;
-        }
-        if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-        	aimMode = true;
-        	repaint();
-        }
-        if (e.getKeyCode() == KeyEvent.VK_SPACE && aimLocked) {
-        	aimLocked = false;
-        	shoot = true;
-        	repaint();
-        }
     }
 
     @Override
     public void keyReleased(KeyEvent e) {
-        if (e.getKeyCode() == KeyEvent.VK_D) {
-            movingRight = false;
-        }
-        if (e.getKeyCode() == KeyEvent.VK_A) {
-            movingLeft = false;
-        }
         if (aimMode && e.getKeyCode() == KeyEvent.VK_SPACE) {
         	//lock position in place, and from here on only adjust power
         	aimLocked = true;
