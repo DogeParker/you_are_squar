@@ -1,4 +1,5 @@
-package t;
+import package t;
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
@@ -19,7 +20,8 @@ public class Game extends JPanel implements KeyListener, Runnable {
     private double acceleration = 0.5;  // Acceleration
     private double gravity = 0.3; //defining gravity
     private double maxSpeed = 5;  // Max speed
-    private double friction = 0.1;  // Friction
+    private double friction = 0.01;  // Friction
+    private double gFriction = 0.1; // friction when on ground
 
     private boolean movingRight = false;
     private boolean movingLeft = false;
@@ -27,7 +29,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
     private boolean onGround = false;
     
     private boolean aimMode = false;
-    private int aimBallX = x+15;
+    private int aimBallX = x + 15;
     private int aimBallY = y + (height / 2) - 100;
     private double aimAngle = 180;
     private int aimRadius = 50;
@@ -65,14 +67,14 @@ public class Game extends JPanel implements KeyListener, Runnable {
             // Apply friction to slow down when no key is pressed
             if (velocityX > 0) {
             	if (onGround) {
-            		velocityX -= friction+.05;
+            		velocityX -= gFriction;
             	} else {
             		velocityX -= friction;
             	}
                 if (velocityX < 0) velocityX = 0;
             } else if (velocityX < 0) {
             	if (onGround) {
-            		velocityX += friction+.05;
+            		velocityX += gFriction;
             	} else {
             		velocityX += friction;
             	}
@@ -81,8 +83,12 @@ public class Game extends JPanel implements KeyListener, Runnable {
         }
 
         // Clamp speed to max
-        if (velocityX > maxSpeed) velocityX = maxSpeed;
-        if (velocityX < -maxSpeed) velocityX = -maxSpeed;
+        if (velocityX > maxSpeed) {
+        	velocityX = maxSpeed;
+        }
+        if (velocityX < -maxSpeed) {
+        	velocityX = -maxSpeed;
+        }
 
         // Update position
         x += velocityX;
@@ -106,8 +112,26 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	onGround = false;
         }
         for (Block i: level1.getBlocks()) {
-        	if (x + width > i.getBlockX() && x + width < i.getBlockX()+10) {
+        	int bX = i.getBlockX();
+        	int bY = i.getBlockY();
+        	int bWidth = i.getBlockWidth();
+        	int bHeight = i.getBlockHeight();
+        	
+        	if ((x + width > bX && x + width < bX + (bWidth/2))&&(y+height>bY&&y<bY+bHeight)) {
         		velocityX = 0;
+        		x = i.getBlockX() - width;
+        	}
+        	else if ((x < bX + bWidth && x > bX + (bWidth/2))&&(y+height>bY&&y<bY+bHeight)) {
+        		velocityX = 0;
+        		x = i.getBlockX() + bWidth;
+        	}
+        	else if ((y + height > bY && y + height < bY + (bHeight/2))&&(x+width>bX&&x<bX+bWidth)) {
+        		velocityY = 0;
+        		y = i.getBlockY() + height;
+        	}
+        	else if ((y < bY + bHeight && y > bY + (bHeight/2))&&(x+width>bX&&x<bX+bWidth)) {
+        		velocityY = 0;
+        		y = i.getBlockY() + bHeight;
         	}
         }
         // jump force upward code
