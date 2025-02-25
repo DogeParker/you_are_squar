@@ -1,4 +1,4 @@
-import package t;
+package t;
 
 import javax.swing.*;
 import java.awt.*;
@@ -21,7 +21,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
     private double gravity = 0.3; //defining gravity
     private double maxSpeed = 5;  // Max speed
     private double friction = 0.01;  // Friction
-    private double gFriction = 0.1; // friction when on ground
+    private double gFriction = 0.2; // friction when on ground
 
     private boolean movingRight = false;
     private boolean movingLeft = false;
@@ -108,30 +108,50 @@ public class Game extends JPanel implements KeyListener, Runnable {
             velocityY = 0;
             onGround = true;
         }
-        else {
-        	onGround = false;
-        }
+        System.out.println(x+", "+y);
         for (Block i: level1.getBlocks()) {
         	int bX = i.getBlockX();
         	int bY = i.getBlockY();
         	int bWidth = i.getBlockWidth();
         	int bHeight = i.getBlockHeight();
         	
-        	if ((x + width > bX && x + width < bX + (bWidth/2))&&(y+height>bY&&y<bY+bHeight)) {
-        		velocityX = 0;
-        		x = i.getBlockX() - width;
-        	}
-        	else if ((x < bX + bWidth && x > bX + (bWidth/2))&&(y+height>bY&&y<bY+bHeight)) {
-        		velocityX = 0;
-        		x = i.getBlockX() + bWidth;
-        	}
-        	else if ((y + height > bY && y + height < bY + (bHeight/2))&&(x+width>bX&&x<bX+bWidth)) {
-        		velocityY = 0;
-        		y = i.getBlockY() + height;
-        	}
-        	else if ((y < bY + bHeight && y > bY + (bHeight/2))&&(x+width>bX&&x<bX+bWidth)) {
-        		velocityY = 0;
-        		y = i.getBlockY() + bHeight;
+        	if (x < bX + bWidth && x + width > bX && y < bY + bHeight && y + height > bY) {
+        		//difference between far right of player and 
+        	    int overlapLeft = (x + width) - bX;
+        	    int overlapRight = (bX + bWidth) - x;
+        	    //difference between yPos of player bottom to top of block
+        	    int overlapTop = (y + height) - bY;
+        	    //difference between yPos of block bottom to top of player
+        	    int overlapBottom = (bY + bHeight) - y;
+        	    
+        	    // Find the smallest overlap:
+        	    int minOverlap = Math.min(Math.min(overlapLeft, overlapRight),Math.min(overlapTop, overlapBottom));
+        	    
+        	    // Resolve collision by pushing the player out on the side of least penetration:
+        	    
+        	    if (minOverlap == overlapLeft) {
+        	        // Collision from left side of block:
+        	        x = bX - width;
+        	        velocityX = -velocityX*0.5;
+        	    } else if (minOverlap == overlapRight) {
+        	        // Collision from right side:
+        	        x = bX + bWidth;
+        	        velocityX = -velocityX*0.5;
+        	    } else if (minOverlap == overlapTop && overlapTop == 0) {
+        	        // Collision from above:
+        	        y = bY - height;
+        	        velocityY = 0;
+        	        onGround = true;  // Set onGround if collision from top
+        	    } else if (minOverlap == overlapTop) {
+        	    	if (Math.abs((y + height) - bY) < 0) {
+        	            y = bY - height;
+        	            velocityY = 0;
+        	            onGround = true;
+        	        }
+        	    } else if (minOverlap == overlapBottom) {
+        	        y = bY + bHeight;
+        	        velocityY = 0;
+        	    }
         	}
         }
         // jump force upward code
@@ -149,7 +169,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	}
         	aimAngle += aimSpeed;
         	
-        } else if (onGround && aimLocked) {
+        } else if (aimLocked) {
         	// perform similar action to aimMode, but radius oscillates rather than angle
         	aimMode = false;
         	aimBallX = x + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
@@ -163,10 +183,9 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	}
         	onGround = false;
         	aimRadius += aimSpeed;
-        } if (onGround && shoot) {
+        } if (shoot) {
         	velocityX = (int) (aimRadius * 0.2) * (Math.cos(Math.toRadians(aimAngle)));
         	velocityY = (int) -(aimRadius * 0.1) * (Math.sin(Math.toRadians(aimAngle)));
-        	System.out.println(velocityY);
         	onGround = false;
         	shoot = false;
         	aimAngle = 180;
@@ -176,7 +195,42 @@ public class Game extends JPanel implements KeyListener, Runnable {
         velocityY += gravity;
         // applying gravity
         y += velocityY;
-        
+        for (Block i: level1.getBlocks()) {
+        	int bX = i.getBlockX();
+        	int bY = i.getBlockY();
+        	int bWidth = i.getBlockWidth();
+        	int bHeight = i.getBlockHeight();
+        	
+        	if (x < bX + bWidth && x + width > bX && y < bY + bHeight && y + height > bY) {
+        		//difference between far right of player and far left of block
+        	    int overlapLeft = (x + width) - bX;
+        	    //difference between far right of block and far left of player
+        	    int overlapRight = (bX + bWidth) - x;
+        	    //difference between yPos of player bottom to top of block
+        	    int overlapTop = (y + height) - bY;
+        	    //difference between yPos of block bottom to top of player
+        	    int overlapBottom = (bY + bHeight) - y;
+        	    
+        	    //find smallest overlap
+        	    int minOverlap = Math.min(Math.min(overlapLeft, overlapRight),Math.min(overlapTop, overlapBottom));
+        	    
+        	    //push player out of block from side with least overlap
+        	    if (minOverlap == overlapLeft) {
+        	        x = bX - width;
+        	        velocityX = -velocityX*0.5;
+        	    } else if (minOverlap == overlapRight) {
+        	        x = bX + bWidth;
+        	        velocityX = -velocityX*0.5;
+        	    } else if (minOverlap == overlapTop) {
+    	            y = bY - height;
+    	            velocityY = 0;
+    	            onGround = true;
+        	    } else if (minOverlap == overlapBottom) {
+        	        y = bY + bHeight;
+        	        velocityY = 0;
+        	    }
+        	}
+        }
     }
 
     @Override
@@ -188,7 +242,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	g.fillOval(aimBallX, aimBallY, 20, 20);
         }
         g.setColor(Color.RED);
-        g.fillOval(x, y, width, height);  // Draw the player
+        g.fillRect(x, y, width, height);
     }
 
     @Override
@@ -217,7 +271,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
     public void keyTyped(KeyEvent e) {}
 
     public static void main(String[] args) {
-        JFrame frame = new JFrame("you are circl");
+        JFrame frame = new JFrame("you are square");
         Game gamePanel = new Game();
         frame.add(gamePanel);
         frame.pack();
