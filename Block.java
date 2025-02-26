@@ -1,4 +1,3 @@
-package t;
 import java.awt.Color;
 import java.awt.Graphics;
 
@@ -10,13 +9,14 @@ public class Block {
     private int y;
     private Color color;
     
+    //default block
     public Block() {
         impassable = true;
-        width = 50;   // You can adjust the size as needed
+        width = 50;
         height = 50;
         x = 0;
         y = 0;
-        color = Color.GRAY; // Default block color
+        color = Color.GRAY;
     }
     
     public Block(int width, int height, int x, int y, Color color) {
