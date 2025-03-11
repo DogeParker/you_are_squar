@@ -8,27 +8,30 @@ public class Game extends JPanel implements KeyListener, Runnable {
 	private final int SCREEN_WIDTH = 800;  // window width
     private final int SCREEN_HEIGHT = 600; // window height
     
-    private int x = 50;       // X position
-    private int y = 300;      // Y position
-    private int width = 50;   // player width
-    private int height = 50;  // player height
-
+    //hardcoded player values
+    private int playerX = 50; // player x position
+    private int playerY = 300; // player y position
+    private int width = 50; // player width
+    private int height = 50; // player height
+    
+    //player variables for movement
+    private boolean onGround = false;
     private double velocityX = 0;
     private double velocityY = 0;
-    private double acceleration = 0.5;  // acceleration (was used for old movement controls)
     private double gravity = 0.3; //defining gravity
-    private double friction = 0.05;  // friction in air
-    private double gFriction = 0.4; // friction when on ground
+    /*private double friction = 0.045; // friction in air
+    private double gFriction = 0.7; // friction when on ground*/
     
-    private boolean onGround = false;
-    
+    //aimBall variables
     private boolean aimMode = false; // true when controlling aimBall angle
-    private int aimBallX = x + 15;
-    private int aimBallY = y + (height / 2) - 100;
-    private double aimAngle = 180;
+    private boolean aimLocked = false; // true when controlling aimBall radius
+    private boolean aimBallPosInvalid = false;
+    private boolean comingFromRight;
+    private int aimBallX = playerX + 15;
+    private int aimBallY = playerY + (height / 2) - 100;
+    private int aimAngle = 180;
     private int aimRadius = 50;
     private double aimSpeed = 1;
-    private boolean aimLocked = false; // true when controlling aimBall radius
     private boolean shoot = false; // true for ~1 frame after pressing space to assign y and x velocities
 
     public Game() { // game loop (no clue)
@@ -52,91 +55,123 @@ public class Game extends JPanel implements KeyListener, Runnable {
     }
 
     public void update() {
-    	// previously had acceleration for movement controls with WASD, not necessary with single button jump-based movement 
-    	
     	// apply friction when in contact with ground or otherwise
-        if (velocityX > 0) {
-        	if (onGround) {
-        		velocityX -= gFriction;
-        	} else {
-        		velocityX -= friction;
-        	}
-            if (velocityX < 0) velocityX = 0;
-        } else if (velocityX < 0) {
-        	if (onGround) {
-        		velocityX += gFriction;
-        	} else {
-        		velocityX += friction;
-        	}
-            if (velocityX > 0) velocityX = 0;
-        }
+    	if (onGround) {
+    		velocityX *= 0.9;
+    	} else {
+    		velocityX *= 0.99;
+    	}
 
         // move right velocityX pixels
-        x += velocityX;
+        playerX += (int) Math.round(velocityX);
 
         // collision detection in general
-        if (x < 0) {
-            x = 0;
+        if (playerX < 0) {
+            playerX = 0;
             velocityX = 0; // Stop movement at the left wall
         }
-        if (x + width > SCREEN_WIDTH) {
-            x = SCREEN_WIDTH - width;
+        if (playerX + width > SCREEN_WIDTH) {
+            playerX = SCREEN_WIDTH - width;
             velocityX = 0; // Stop movement at the right wall
         }
         // floor detection
-        if (y + height >= SCREEN_HEIGHT) {
-            y = SCREEN_HEIGHT - height;
+        if (playerY + height >= SCREEN_HEIGHT) {
+            playerY = SCREEN_HEIGHT - height;
             velocityY = 0;
             onGround = true;
         }
         
-        aimBallX = x + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
-    	aimBallY = y + (height / 2)-10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
+        aimBallX = playerX + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
+    	aimBallY = playerY + (height / 2)-10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
         // jump force upward code
+    	int upperBound; //upper bound for aim controls
+    	int lowerBound; //lower bound for aim controls
+    	int increment; //what is increasing during update (distance from player or radius around player)
+    	int aimBallBounds;
+    	
+    	
         if (!(onGround) && aimMode) {
         	aimMode = false;
-        } else if (onGround && aimMode) {
-        	aimBallX = x + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
-        	aimBallY = y + (height / 2)-10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
-        	if (aimBallX<0) aimBallX = 0;
-        	else if (aimBallX>SCREEN_WIDTH-width) aimBallX = SCREEN_WIDTH-width;
+        } else if (onGround && aimMode || onGround && aimLocked) {
+        	//run check to see if aimball pos is ever at -1
+        	upperBound = 180;
+    		lowerBound = 0;
+    		increment = aimAngle;
+    		
+    		aimBallBounds = lowerBound;
+    		
+        	while (aimBallBounds <= upperBound) {
+        		aimBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
+        		if (aimBallX < 0) {
+        			aimBallPosInvalid = true;
+        			comingFromRight = true;
+        			break;
+        		} else if (aimBallX > SCREEN_WIDTH - width) {
+        			aimBallPosInvalid = true;
+        			comingFromRight = false;
+        			break;
+        		}
+        		aimBallBounds++;
+        	}
         	
-        	if (aimAngle > 180) {
+        	if (aimLocked) {
+        		upperBound = 150;
+        		lowerBound = 50;
+        		increment = aimRadius;
+        	}
+        	
+        	System.out.println(aimBallPosInvalid);
+        	
+        	if (aimBallPosInvalid && aimMode) {
+        		if (comingFromRight) {
+        			lowerBound = 90;
+        		}
+        		else if (comingFromRight == false) {
+        			upperBound = 90;
+        		}
+        	}
+        	
+        	/*
+        	if (aimBallX < 0) {
+        	    aimAngle = (int) Math.toDegrees(Math.acos((double) -playerX / aimRadius));
+        	    aimSpeed = -aimSpeed;
+        	} else if (aimBallX > SCREEN_WIDTH - width) {
+        	    aimAngle = (int) Math.toDegrees(Math.acos((double) (SCREEN_WIDTH - playerX - width) / aimRadius));
+        	    aimSpeed = -aimSpeed;
+        	}*/
+        	
+        	// recalculate aimBall position based on corrected aimAngle
+        	aimBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
+        	aimBallY = playerY + (height / 2) - 10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
+        	
+        	// limiting range of aimBall
+        	if (increment > upperBound) {
         		aimSpeed = -aimSpeed;
         		System.out.println(aimBallX+", "+aimBallY+" angle1...");
-        	} else if (aimAngle < 0) {
+        	} else if (increment < lowerBound) {
         		aimSpeed = -aimSpeed;
         		System.out.println(aimBallX+", "+aimBallY+" angle2...");
         	}
-        	aimAngle += aimSpeed;
-        } else if (aimLocked) {
-        	// perform similar action to aimMode, but radius oscillates rather than angle
-        	aimMode = false;
-        	aimBallX = x + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
-        	aimBallY = y + (height / 2)-10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
-        	if (aimBallX<0) aimBallX = 0;
-        	else if (aimBallX>SCREEN_WIDTH-width) aimBallX = SCREEN_WIDTH-width;
-        	if (aimRadius > 150) {
-        		aimSpeed = -aimSpeed;
-        	} else if (aimRadius < 50) {
-        		aimSpeed = -aimSpeed;
+        	if (aimMode) {
+        		aimAngle += aimSpeed;
+        	} else {
+        		aimRadius += aimSpeed;
         	}
-        	onGround = false;
-        	aimRadius += aimSpeed;
-
-            System.out.println(aimBallX+", "+aimBallY+" radius...");
+        	//reset aimball bounds detection
+        	aimBallPosInvalid = false;
+        	
         } if (shoot) {
-        	velocityX = (int) (aimRadius * 0.125) * (Math.cos(Math.toRadians(aimAngle)));
-        	velocityY = (int) -(aimRadius * 0.1) * (Math.sin(Math.toRadians(aimAngle)));
+        	velocityX = (int) aimRadius * (Math.cos(Math.toRadians(aimAngle)))*0.1;
+        	velocityY = (int) -aimRadius * (Math.sin(Math.toRadians(aimAngle)))*0.1;
         	onGround = false;
         	shoot = false;
         	aimAngle = 180;
             aimRadius = 50;
         }
+        // applying gravity
+        playerY += (int) Math.round(velocityY);
         // controls slowing down of jump and downwards falling
         velocityY += gravity;
-        // applying gravity
-        y += velocityY;
         for (Block i: level1.getBlocks()) {
         	if (!(i.isImpassable())) {
         		System.out.println("here!");
@@ -147,33 +182,33 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	int bWidth = i.getBlockWidth();
         	int bHeight = i.getBlockHeight();
         	
-        	if (x < bX + bWidth && x + width > bX && y < bY + bHeight && y + height > bY) {
+        	if (playerX < bX + bWidth && playerX + width > bX && playerY < bY + bHeight && playerY + height > bY) {
         		// difference between far right of player and far left of block
-        	    int overlapLeft = (x + width) - bX;
+        	    int overlapLeft = (playerX + width) - bX;
         	    // difference between far right of block and far left of player
-        	    int overlapRight = (bX + bWidth) - x;
+        	    int overlapRight = (bX + bWidth) - playerX;
         	    // difference between yPos of player bottom to top of block
-        	    int overlapTop = (y + height) - bY;
+        	    int overlapTop = (playerY + height) - bY;
         	    // difference between yPos of block bottom to top of player
-        	    int overlapBottom = (bY + bHeight) - y;
+        	    int overlapBottom = (bY + bHeight) - playerY;
         	    
         	    // find smallest overlap
         	    int minOverlap = Math.min(Math.min(overlapLeft, overlapRight),Math.min(overlapTop, overlapBottom));
         	    
         	    // push player out of block from side with least overlap
         	    if (minOverlap == overlapTop) {
-    	            y = bY - height;
+    	            playerY = bY - height;
     	            velocityY = 0;
-    	            onGround = true;
+    	            onGround = true;   
+        	    } else if (minOverlap == overlapBottom) {
+        	        playerY = bY + bHeight;
+        	        velocityY = 0;
         	    } else if (minOverlap == overlapLeft) {
-        	        x = bX - width;
+        	        playerX = bX - width;
         	        velocityX = -velocityX*0.5;
         	    } else if (minOverlap == overlapRight) {
-        	        x = bX + bWidth;
+        	        playerX = bX + bWidth;
         	        velocityX = -velocityX*0.5;
-        	    } else if (minOverlap == overlapBottom) {
-        	        y = bY + bHeight;
-        	        velocityY = 0;
         	    }
         	}
         }
@@ -190,7 +225,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
         }
         // draw player
         g.setColor(Color.RED);
-        g.fillRect(x, y, width, height);
+        g.fillRect(playerX, playerY, width, height);
     }
 
     @Override
