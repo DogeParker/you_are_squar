@@ -4,8 +4,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
 public class Game extends JPanel implements KeyListener, Runnable {
-	private Level1 level1 = new Level1();
-	private final int SCREEN_WIDTH = 800;  // window width
+    private Level1 level1 = new Level1();
+    private final int SCREEN_WIDTH = 800;  // window width
     private final int SCREEN_HEIGHT = 600; // window height
     
     //hardcoded player values
