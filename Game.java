@@ -39,23 +39,38 @@ public class Game extends JPanel implements KeyListener, Runnable {
     int upperBound; //upper bound for aim controls
 	int lowerBound; //lower bound for aim controls
 	int increment; //what is increasing during update (distance from player or radius around player)
-	int aimBallBounds;
-	int outerAimBallBounds;
+	int outerAimBallBounds; // used to get the position at which aimball hits bounds and assign upper/lower bounds to that
     
 	
-	//should return 1 if OOB (out of bounds) right, 2 if OOB left, and return 0 if aimball doesn't go OOB
+	//should return 1 if OOB (out of bounds) from the right, 2 if OOB from the left, and return 0 if aimball doesn't go OOB
     public int checkAimOutOfBounds() {
     	int tempBallX;
+    	int aimBallBounds;
     	upperBound = 180;
 		lowerBound = 0;
 		increment = aimAngle;
 		
 		aimBallBounds = lowerBound;
+		tempBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
+		if (tempBallX > SCREEN_WIDTH - 20) {
+			aimBallBounds = upperBound;
+			while (aimBallBounds > lowerBound) {
+	    		tempBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
+	    		if (tempBallX > SCREEN_WIDTH - 20) {
+	    			System.out.println("Out of bounds detected RAHHHHHHH: " + aimBallBounds);
+	    			outerAimBallBounds = aimBallBounds;
+	    			return 2;
+	    		}
+	    		aimBallBounds--; 
+	    	}
+	    	return 0;
+		}
 		
+		//runs through every possible degree of angle to check if it goes OOB	
     	while (aimBallBounds < upperBound) {
     		tempBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
     		if (tempBallX < 0) {
-    			System.out.println("Out of bounds detected: " + tempBallX);
+    			//System.out.println("Out of bounds detected: " + tempBallX);
     			outerAimBallBounds = aimBallBounds;
     			return 1;
     		} else if (tempBallX > SCREEN_WIDTH - width) {
@@ -89,6 +104,10 @@ public class Game extends JPanel implements KeyListener, Runnable {
 
     public void update() {
     	// apply friction when in contact with ground or otherwise
+    	if (-0.0001<velocityX&&velocityX<0.0001) {
+    		velocityX = 0;
+    	}
+    	
     	if (onGround) {
     		velocityX *= 0.9;
     	} else {
@@ -132,30 +151,18 @@ public class Game extends JPanel implements KeyListener, Runnable {
         		increment = aimAngle;
         	}
         	
-        	System.out.println(aimAngle);
+        	//System.out.println(aimAngle);
         	
         	if (aimBallPosInvalid && aimMode) {
         		if (comingFromRight) {
-        			System.out.println("huh?");
         			upperBound = outerAimBallBounds;
         			lowerBound = 0;
-        			System.out.println("aimBallPosInvalid set, comingFromRight: " + comingFromRight);
-        			//aimAngle = 40;
         		}
         		else if (comingFromRight == false) {
         			upperBound = 180;
         			lowerBound = outerAimBallBounds;
         		}
         	}
-        	
-        	/*
-        	if (aimBallX < 0) {
-        	    aimAngle = (int) Math.toDegrees(Math.acos((double) -playerX / aimRadius));
-        	    aimSpeed = -aimSpeed;
-        	} else if (aimBallX > SCREEN_WIDTH - width) {
-        	    aimAngle = (int) Math.toDegrees(Math.acos((double) (SCREEN_WIDTH - playerX - width) / aimRadius));
-        	    aimSpeed = -aimSpeed;
-        	}*/
         	
         	// recalculate aimBall position based on corrected aimAngle
         	aimBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
@@ -164,10 +171,10 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	// limiting range of aimBall
         	if (increment > upperBound) {
         		aimSpeed = -aimSpeed;
-        		System.out.println(aimBallX+", "+aimBallY+" angle1... lower bound "+lowerBound+"  upper bound "+upperBound);
+        		//System.out.println(aimBallX+", "+aimBallY+" angle1... lower bound "+lowerBound+"  upper bound "+upperBound);
         	} else if (increment < lowerBound) {
         		aimSpeed = -aimSpeed;
-        		System.out.println(aimBallX+", "+aimBallY+" angle2...");
+        		//System.out.println(aimBallX+", "+aimBallY+" angle2...");
         	}
         	
         	if (aimMode) {
@@ -193,8 +200,10 @@ public class Game extends JPanel implements KeyListener, Runnable {
         }
         // applying gravity
         playerY += (int) Math.round(velocityY);
+        if (playerY == 0) velocityY=0;
         // controls slowing down of jump and downwards falling
         velocityY += gravity;
+        System.out.println(velocityX);
         for (Block i: level1.getBlocks()) {
         	if (!(i.isImpassable())) {
         		System.out.println("here!");
@@ -241,7 +250,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	aimSpeed = -1;
         }
     }
-
+    
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
