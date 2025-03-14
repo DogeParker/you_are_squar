@@ -57,7 +57,6 @@ public class Game extends JPanel implements KeyListener, Runnable {
 			while (aimBallBounds > lowerBound) {
 	    		tempBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
 	    		if (tempBallX > SCREEN_WIDTH - 20) {
-	    			System.out.println("Out of bounds detected RAHHHHHHH: " + aimBallBounds);
 	    			outerAimBallBounds = aimBallBounds;
 	    			return 2;
 	    		}
@@ -103,19 +102,20 @@ public class Game extends JPanel implements KeyListener, Runnable {
     }
 
     public void update() {
-    	// apply friction when in contact with ground or otherwise
-    	if (-0.0001<velocityX&&velocityX<0.0001) {
+    	// prevents unnecessary calculations on velocityX (ie slowing hor. movement down to 0.0000000000000001 and beyond is superfluous)
+    	if (-0.001<velocityX && velocityX<0.001) {
     		velocityX = 0;
     	}
     	
+    	// apply friction when in contact with ground or otherwise
     	if (onGround) {
     		velocityX *= 0.9;
     	} else {
     		velocityX *= 0.99;
     	}
 
-        // move right velocityX pixels
-        playerX += (int) Math.round(velocityX);
+        // move right velocityX pixels (as long as velocityX is not zero)
+    	if (velocityX != 0) playerX += (int) Math.round(velocityX);
 
         // collision detection in general
         if (playerX < 0) {
@@ -126,6 +126,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
             playerX = SCREEN_WIDTH - width;
             velocityX = 0; // Stop movement at the right wall
         }
+        
         // floor detection
         if (playerY + height >= SCREEN_HEIGHT) {
             playerY = SCREEN_HEIGHT - height;
@@ -136,10 +137,11 @@ public class Game extends JPanel implements KeyListener, Runnable {
         aimBallX = playerX + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
     	aimBallY = playerY + (height / 2)-10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
     	
-    	
+    	//if trying to engage aiming while in air, prevent player from doing so
         if (!(onGround) && aimMode) {
         	aimMode = false;
-        } else if (onGround && aimMode || onGround && aimLocked) {
+        } //main aiming loop
+        else if (onGround && aimMode || onGround && aimLocked) {
         	
         	if (aimLocked) {
         		upperBound = 150;
@@ -168,25 +170,28 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	aimBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
         	aimBallY = playerY + (height / 2) - 10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
         	
+        	if (aimLocked && aimBallX < 0) {
+        		aimBallX = 0;
+        	} else if (aimLocked && aimBallX > SCREEN_WIDTH-20) {
+        		aimBallX = SCREEN_WIDTH-20;
+        	}
+        	
         	// limiting range of aimBall
         	if (increment > upperBound) {
         		aimSpeed = -aimSpeed;
-        		//System.out.println(aimBallX+", "+aimBallY+" angle1... lower bound "+lowerBound+"  upper bound "+upperBound);
         	} else if (increment < lowerBound) {
         		aimSpeed = -aimSpeed;
-        		//System.out.println(aimBallX+", "+aimBallY+" angle2...");
         	}
         	
+        	// incrementing aimBall movement
         	if (aimMode) {
         		aimAngle += aimSpeed;
         	} else {
         		aimRadius += aimSpeed;
         	}
-        	//reset aimball bounds detection
-        	
         } if (shoot) {
-        	velocityX = (int) aimRadius * (Math.cos(Math.toRadians(aimAngle)))*0.1;
-        	velocityY = (int) -aimRadius * (Math.sin(Math.toRadians(aimAngle)))*0.1;
+        	velocityX = Math.round(aimRadius * (Math.cos(Math.toRadians(aimAngle)))*0.1);
+        	velocityY = Math.round(-aimRadius * (Math.sin(Math.toRadians(aimAngle)))*0.1);
         	onGround = false;
         	shoot = false;
         	aimAngle = 90;
@@ -203,12 +208,9 @@ public class Game extends JPanel implements KeyListener, Runnable {
         if (playerY == 0) velocityY=0;
         // controls slowing down of jump and downwards falling
         velocityY += gravity;
-        System.out.println(velocityX);
+        
+        //collision detection with blocks
         for (Block i: level1.getBlocks()) {
-        	if (!(i.isImpassable())) {
-        		System.out.println("here!");
-        		continue;
-        	}
         	int bX = i.getBlockX();
         	int bY = i.getBlockY();
         	int bWidth = i.getBlockWidth();
@@ -244,6 +246,8 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	    }
         	}
         }
+        
+        //as long as not in aimMode or in aimLocked, if the left or right arrow keys are pressed, aimBall starts oscillating in that direction
         if (!(aimMode) && !(aimLocked) && holdingLeft) {
         	aimSpeed = 1;
         } else if (!(aimMode) && !(aimLocked) && holdingRight) {
@@ -281,7 +285,6 @@ public class Game extends JPanel implements KeyListener, Runnable {
     	    		aimBallPosInvalid = true;
     	    		comingFromRight = false;
     	    	}
-    	    	System.out.println("Jeepers thats a lot");
     	        aimMode = true;
     	    }
     	    repaint();
