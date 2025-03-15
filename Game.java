@@ -14,8 +14,10 @@ import java.awt.event.KeyListener;
  */
 
 public class Game extends JPanel implements KeyListener, Runnable {
-	private Level1 level1 = new Level1();
-	private Level2 level2 = new Level2();
+	private LevelCreator levelCreator = new LevelCreator();
+	private int currentLevelIndex = 1;
+	private Level currentLevel;
+	
 	private final int SCREEN_WIDTH = 800;  // window width
     private final int SCREEN_HEIGHT = 600; // window height
     
@@ -53,7 +55,9 @@ public class Game extends JPanel implements KeyListener, Runnable {
 	int outerAimBallBounds; // used to get the position at which aimball hits bounds and assign upper/lower bounds to that
     
 	// for wind
-	double windStrength = 1;
+	double windStrength = 2;
+	int rnX;
+	int rnY;
 	
 	//should return 1 if OOB (out of bounds) from the right, 2 if OOB from the left, and return 0 if aimball doesn't go OOB
     public int checkAimOutOfBounds() {
@@ -116,7 +120,33 @@ public class Game extends JPanel implements KeyListener, Runnable {
 double temp;
 double diff;
 double diff2;
-    public void update() {
+private int dustSpawnCounter = 0; // Counter to control dust spawn rate
+
+public void update() {
+    //dust! :)
+    currentLevel = levelCreator.getLevelAt(currentLevelIndex);
+    for (int i = 0; i < currentLevel.getDusts().size(); i++) {
+        if (currentLevel.getDusts().get(i).getAlpha() == 0) {
+            currentLevel.getDusts().remove(i);
+            i--;
+        }
+    }
+    for (Dust i : currentLevel.getDusts()) {
+        i.advanceStage();
+        i.alphaAdjust();
+        //movement for particles, particle physics if you will
+        i.setX((int) Math.round(i.getX() + windStrength));
+        //i.setY(i.getY()+1);
+    }
+
+    // Add dust particles less frequently
+    dustSpawnCounter++;
+    if (dustSpawnCounter >= 15) { // Adjust the frequency as needed
+        rnX = (int) (Math.random() * (SCREEN_WIDTH + 1));
+        rnY = (int) (Math.random() * (SCREEN_HEIGHT + 1));
+        currentLevel.addDust(new Dust(rnX, rnY));
+        dustSpawnCounter = 0;
+    }
     	// prevents unnecessary calculations on velocityX (ie slowing hor. movement down to 0.0000000000000001 and beyond is superfluous)
     	if (-0.001<velocityX && velocityX<0.001) {
     		velocityX = 0;
@@ -127,7 +157,7 @@ double diff2;
     		velocityX *= 0.85;
     	} else {
     		velocityX *= 0.999;
-    		//velocityX -= windStrength;
+    		velocityX += windStrength*.05;
     	}
     	diff2 = diff - (velocityX-temp);
     	
@@ -227,7 +257,7 @@ double diff2;
         velocityY += gravity;
         
         //collision detection with blocks
-        for (Block i: level1.getBlocks()) {
+        for (Block i: currentLevel.getBlocks()) {
         	int bX = i.getBlockX();
         	int bY = i.getBlockY();
         	int bWidth = i.getBlockWidth();
@@ -270,20 +300,13 @@ double diff2;
         } else if (!(aimMode) && !(aimLocked) && holdingRight) {
         	aimSpeed = -1;
         }
-        
-        //dust! :)
-        for (Dust i: level2.getDusts()) {
-        	i.advanceStage();
-        	i.alphaAdjust();
-        }
-        
     }
     
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
         setBackground(new Color(0x2E2E2E));
-        level2.drawLevel(g);
+        levelCreator.getLevelAt(currentLevelIndex).drawLevel(g);
         // draw aimBall when controlling angle or strength
         if (aimMode||aimLocked) {
         	g.setColor(new Color(0xd6d6d6));

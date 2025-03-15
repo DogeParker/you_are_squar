@@ -12,20 +12,21 @@ public class Dust {
     private Color color;
     
     public Dust() {
-        width = 3;   // You can adjust the size as needed
+        width = 3;
         height = 3;
         x = 100;
         y = 100;
         alpha = 255;
-        color = new Color(211, 47, 47, alpha); // Default block color
+        color = new Color(255, 255, 255, alpha); // default block color
     }
     
-    public Dust(int x, int y, Color color) {
+    public Dust(int x, int y) {
         this.width = 3;
         this.height = 3;
         this.x = x;
         this.y = y;
-        this.color = color;
+        alpha = 255;
+        color = new Color(255, 255, 255, alpha);
     }
     
     public void drawDust(Graphics g) {
@@ -34,17 +35,17 @@ public class Dust {
     }
     
     // getter methods
-    public int getDustX() {
+    public int getX() {
         return x;
     }
     
-    public int getDustY() {
+    public int getY() {
         return y;
     }
     
     public void advanceStage() {
-    	if (stage < 20) {
-        	stage+=1;
+    	if (stage < 60) {
+        	stage += 1;
     	}
     }
     
@@ -64,8 +65,8 @@ public class Dust {
     }
     
     public void alphaAdjust() {
-    	alpha = 255 - stage*13;
+    	alpha = 255 - (stage * 5);
     	if (alpha < 0) alpha = 0;
-    	color = new Color(211, 47, 47, alpha);
+    	color = new Color(255, 255, 255, alpha);
     }
 }
