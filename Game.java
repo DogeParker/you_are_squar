@@ -3,8 +3,19 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 
+/*
+ * Level mechanics
+ * 	-Ice --- reduce friction while on blocks with ice flag (light blue)
+ * 	-Wind --- subtract (or add) velocityX by some value, making it clear to the player which direction the wind is blowing? (gonna be hard to make it clear)
+ *	-........ control wind with arrow keys for added controls complexity?
+ * 	-Portals --- make blocks with portal flag teleport the player to another portal, different colors maybe? (blue - orange)
+ * 	-Bouncy --- (lime)
+ * 	-dunno
+ */
+
 public class Game extends JPanel implements KeyListener, Runnable {
 	private Level1 level1 = new Level1();
+	private Level2 level2 = new Level2();
 	private final int SCREEN_WIDTH = 800;  // window width
     private final int SCREEN_HEIGHT = 600; // window height
     
@@ -41,6 +52,8 @@ public class Game extends JPanel implements KeyListener, Runnable {
 	int increment; //what is increasing during update (distance from player or radius around player)
 	int outerAimBallBounds; // used to get the position at which aimball hits bounds and assign upper/lower bounds to that
     
+	// for wind
+	double windStrength = 1;
 	
 	//should return 1 if OOB (out of bounds) from the right, 2 if OOB from the left, and return 0 if aimball doesn't go OOB
     public int checkAimOutOfBounds() {
@@ -100,7 +113,9 @@ public class Game extends JPanel implements KeyListener, Runnable {
             }
         }
     }
-
+double temp;
+double diff;
+double diff2;
     public void update() {
     	// prevents unnecessary calculations on velocityX (ie slowing hor. movement down to 0.0000000000000001 and beyond is superfluous)
     	if (-0.001<velocityX && velocityX<0.001) {
@@ -109,14 +124,16 @@ public class Game extends JPanel implements KeyListener, Runnable {
     	
     	// apply friction when in contact with ground or otherwise
     	if (onGround) {
-    		velocityX *= 0.9;
+    		velocityX *= 0.85;
     	} else {
-    		velocityX *= 0.99;
+    		velocityX *= 0.999;
+    		//velocityX -= windStrength;
     	}
-
+    	diff2 = diff - (velocityX-temp);
+    	
         // move right velocityX pixels (as long as velocityX is not zero)
+    	temp = playerX;
     	if (velocityX != 0) playerX += (int) Math.round(velocityX);
-
         // collision detection in general
         if (playerX < 0) {
             playerX = 0;
@@ -190,8 +207,8 @@ public class Game extends JPanel implements KeyListener, Runnable {
         		aimRadius += aimSpeed;
         	}
         } if (shoot) {
-        	velocityX = Math.round(aimRadius * (Math.cos(Math.toRadians(aimAngle)))*0.1);
-        	velocityY = Math.round(-aimRadius * (Math.sin(Math.toRadians(aimAngle)))*0.1);
+        	velocityX += Math.round(aimRadius * (Math.cos(Math.toRadians(aimAngle)))*0.1);
+        	velocityY += Math.round(-aimRadius * (Math.sin(Math.toRadians(aimAngle)))*0.1);
         	onGround = false;
         	shoot = false;
         	aimAngle = 90;
@@ -244,7 +261,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
         	        playerX = bX + bWidth;
         	        velocityX = -velocityX*0.5;
         	    }
-        	}
+        	}	
         }
         
         //as long as not in aimMode or in aimLocked, if the left or right arrow keys are pressed, aimBall starts oscillating in that direction
@@ -253,19 +270,27 @@ public class Game extends JPanel implements KeyListener, Runnable {
         } else if (!(aimMode) && !(aimLocked) && holdingRight) {
         	aimSpeed = -1;
         }
+        
+        //dust! :)
+        for (Dust i: level2.getDusts()) {
+        	i.advanceStage();
+        	i.alphaAdjust();
+        }
+        
     }
     
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        level1.drawLevel(g);
+        setBackground(new Color(0x2E2E2E));
+        level2.drawLevel(g);
         // draw aimBall when controlling angle or strength
         if (aimMode||aimLocked) {
-        	g.setColor(Color.MAGENTA);
+        	g.setColor(new Color(0xd6d6d6));
         	g.fillOval(aimBallX, aimBallY, 20, 20);
         }
         // draw player
-        g.setColor(Color.RED);
+        g.setColor(new Color(0xD72638));
         g.fillRect(playerX, playerY, width, height);
     }
 

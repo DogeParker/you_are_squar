@@ -1,3 +1,4 @@
+
 import java.awt.Color;
 import java.awt.Graphics;
 
@@ -9,16 +10,22 @@ public class Block {
     private int y;
     private Color color;
     
-    //default block
     public Block() {
         impassable = true;
         width = 50;
         height = 50;
         x = 0;
         y = 0;
-        color = Color.GRAY;
+        color = new Color(0x4B4B4B);
     }
-    
+    public Block(int width, int height, int x, int y) {
+        this.impassable = true;
+        this.width = width;
+        this.height = height;
+        this.x = x;
+        this.y = y;
+        this.color = new Color(0x4B4B4B);
+    }
     public Block(int width, int height, int x, int y, Color color) {
         this.impassable = true;
         this.width = width;
