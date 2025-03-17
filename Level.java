@@ -9,10 +9,12 @@ public class Level {
     // A helper inner class to tie a Block to its position
     private ArrayList<Dust> dusts;
     private ArrayList<Block> blocks;
+    private double windStrength;
     
-    public Level() {
+    public Level(double wind) {
         dusts = new ArrayList<>();
         blocks = new ArrayList<>();
+        windStrength = wind;
     }
     
     // draw everything in the level.. blocks and dust
@@ -35,6 +37,10 @@ public class Level {
     
     public ArrayList<Dust> getDusts() {
         return dusts;
+    }
+    
+    public double getWind() {
+    	return windStrength;
     }
     
     public void addDust(Dust d) {

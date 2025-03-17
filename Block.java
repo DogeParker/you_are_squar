@@ -4,6 +4,9 @@ import java.awt.Graphics;
 
 public class Block {
     private boolean impassable;
+    private boolean isIce;
+    private boolean isBouncy;
+    private boolean isPortal;
     private int width;
     private int height;
     private int x;
@@ -41,6 +44,17 @@ public class Block {
         this.x = x;
         this.y = y;
         this.color = color;
+    }
+    public Block(int width, int height, int x, int y, Color color, boolean isPortal, boolean isIce, boolean isBouncy) {
+        this.impassable = false;
+        this.width = width;
+        this.height = height;
+        this.x = x;
+        this.y = y;
+        this.color = color;
+        this.isIce = isIce;
+        this.isPortal = isPortal;
+        this.isBouncy = isBouncy;
     }
     
     public void drawBlock(Graphics g) {
