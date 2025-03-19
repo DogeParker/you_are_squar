@@ -16,7 +16,7 @@ import java.awt.event.KeyListener;
 public class Game extends JPanel implements KeyListener, Runnable {
 	private boolean levelViewerMode = false;
 	private LevelCreator levelCreator = new LevelCreator();
-	private int currentLevelIndex = 1;
+	private int currentLevelIndex = 0;
 	private Level currentLevel = levelCreator.getLevelAt(currentLevelIndex);
 	private boolean changeLevelUp;
 	private boolean changeLevelDown;
@@ -25,8 +25,8 @@ public class Game extends JPanel implements KeyListener, Runnable {
     private final int SCREEN_HEIGHT = 600; // window height
     
     //hardcoded player values
-    private int playerX = 50; // player x position ... default 50
-    private int playerY = 300; // player y position ... default 300
+    private double playerX = 50; // player x position ... default 50
+    private double playerY = 300; // player y position ... default 300
     private int width = 50; // player width
     private int height = 50; // player height
     
@@ -45,8 +45,8 @@ public class Game extends JPanel implements KeyListener, Runnable {
     private boolean aimLocked = false; // true when controlling aimBall radius
     private boolean aimBallPosInvalid = false;
     private boolean comingFromRight = true;
-    private int aimBallX = playerX + 15;
-    private int aimBallY = playerY + (height / 2) - 100;
+    private int aimBallX = (int) Math.round(playerX) + 15;
+    private int aimBallY = (int) Math.round(playerY) + (height / 2) - 100;
     private int aimAngle = 90;
     private int aimRadius = 50;
     private double aimSpeed = 1;
@@ -74,11 +74,11 @@ public class Game extends JPanel implements KeyListener, Runnable {
 		increment = aimAngle;
 		
 		aimBallBounds = lowerBound;
-		tempBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
+		tempBallX = (int) Math.round(playerX) + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
 		if (tempBallX > SCREEN_WIDTH - 20) {
 			aimBallBounds = upperBound;
 			while (aimBallBounds > lowerBound) {
-	    		tempBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
+	    		tempBallX = (int) Math.round(playerX) + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
 	    		if (tempBallX > SCREEN_WIDTH - 20) {
 	    			outerAimBallBounds = aimBallBounds;
 	    			return 2;
@@ -90,7 +90,7 @@ public class Game extends JPanel implements KeyListener, Runnable {
 		
 		//runs through every possible degree of angle to check if it goes OOB	
     	while (aimBallBounds < upperBound) {
-    		tempBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
+    		tempBallX = (int) Math.round(playerX) + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimBallBounds)));
     		if (tempBallX < 0) {
     			//System.out.println("Out of bounds detected: " + tempBallX);
     			outerAimBallBounds = aimBallBounds;
@@ -129,8 +129,8 @@ public class Game extends JPanel implements KeyListener, Runnable {
     	}
     	
     	// recalculate aimBall position based on corrected aimAngle
-    	aimBallX = playerX + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
-    	aimBallY = playerY + (height / 2) - 10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
+    	aimBallX = (int) Math.round(playerX) + (width / 2) - 10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
+    	aimBallY = (int) Math.round(playerY) + (height / 2) - 10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
     	
     	if (aimLocked && aimBallX < 0) {
     		aimBallX = 0;
@@ -176,11 +176,6 @@ public class Game extends JPanel implements KeyListener, Runnable {
 	public void update() {
 	    //dust! :)
 		windStrength = currentLevel.getWind();
-		if (windStrength < 0) {
-			playerControlledWind = true;
-			windStrength = Math.abs(windStrength);
-		}
-		System.out.println(playerControlledWind);
 		if (windStrength != 0) {
 		    for (int i = 0; i < currentLevel.getDusts().size(); i++) {
 		        if (currentLevel.getDusts().get(i).getAlpha() == 0) {
@@ -195,13 +190,13 @@ public class Game extends JPanel implements KeyListener, Runnable {
 		        i.setX((int) Math.round(i.getX() + windStrength*3));
 		        //i.setY(i.getY()+1);
 		    }
-		    if (windStrength<2 && windStrength>-2) {
+		    if (windStrength < 2 && windStrength > -2) {
 		    	windStrength += ROCofWind;
 		    }
 		
-		    // ddd dust particles less frequently
+		    // higher == dust particles less frequently
 		    dustSpawnCounter++;
-		    if (dustSpawnCounter >= 15) {
+		    if (dustSpawnCounter >= 12) {
 		        rnX = (int) (Math.random() * (SCREEN_WIDTH - 20));
 		        rnY = (int) (Math.random() * (SCREEN_HEIGHT + 1));
 		        currentLevel.addDust(new Dust(rnX, rnY));
@@ -248,8 +243,8 @@ public class Game extends JPanel implements KeyListener, Runnable {
 	        onGround = true;
 	    }
 	    
-	    aimBallX = playerX + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
-		aimBallY = playerY + (height / 2)-10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
+	    aimBallX = (int) Math.round(playerX) + (width / 2)-10 + (int) (aimRadius * Math.cos(Math.toRadians(aimAngle)));
+		aimBallY = (int) Math.round(playerY) + (height / 2)-10 - (int) (aimRadius * Math.sin(Math.toRadians(aimAngle)));
 		
 		//if trying to engage aiming while in air, prevent player from doing so
 	    if (!(onGround) && aimMode) {
@@ -286,31 +281,35 @@ public class Game extends JPanel implements KeyListener, Runnable {
 	    	int bHeight = i.getBlockHeight();
 	    	
 	    	if (playerX < bX + bWidth && playerX + width > bX && playerY < bY + bHeight && playerY + height > bY) {
-	    	    int overlapLeft = (playerX + width) - bX; // difference between far right of player and far left of block
-	    	    int overlapRight = (bX + bWidth) - playerX; // difference between far right of block and far left of player
-	    	    int overlapTop = (playerY + height) - bY; // difference between yPos of player bottom to top of block
-	    	    int overlapBottom = (bY + bHeight) - playerY; // difference between yPos of block bottom to top of player
+	    	    double overlapLeft = (playerX + width) - bX; // difference between far right of player and far left of block
+	    	    double overlapRight = (bX + bWidth) - playerX; // difference between far right of block and far left of player
+	    	    double overlapTop = (playerY + height) - bY; // difference between yPos of player bottom to top of block
+	    	    double overlapBottom = (bY + bHeight) - playerY; // difference between yPos of block bottom to top of player
 	    	    
 	    	    // find smallest overlap
-	    	    int minOverlap = Math.min(Math.min(overlapLeft, overlapRight), Math.min(overlapTop, overlapBottom));
+	    	    double minOverlap = Math.min(Math.min(overlapLeft, overlapRight), Math.min(overlapTop, overlapBottom));
 	    	    
-	    	    // push player out of block from side with least overlap
 	    	    if (minOverlap == overlapTop) {
 		            playerY = bY - height;
-		            velocityY = 0;
+		            if (velocityY > 0) {
+		            	velocityY = 0;
+		            }
 		            onGround = true;   
-	    	    } else if (minOverlap == overlapBottom) {
+	    	    } if (minOverlap == overlapBottom) {
 	    	        playerY = bY + bHeight;
-	    	        velocityY = 0;
-	    	    } else if (minOverlap == overlapLeft) {
+	    	        if (velocityY < 0) {
+	    	        	velocityY = 0;
+	    	        }
+	    	    } if (minOverlap == overlapLeft/*&& velocityX < or whatever if sumthing goes wrong */) {
 	    	        playerX = bX - width;
 	    	        velocityX = -velocityX*0.5;
-	    	    } else if (minOverlap == overlapRight) {
+	    	    } if (minOverlap == overlapRight) {
 	    	        playerX = bX + bWidth;
 	    	        velocityX = -velocityX*0.5;
 	    	    }
-	    	}	
-	    }
+	    	}
+	    }	
+	    
 	    
 	    // as long as not in aimMode or in aimLocked, if the left or right arrow keys are pressed, aimBall starts oscillating in that direction
 	    if (!(aimMode) && !(aimLocked) && holdingLeft) {
@@ -336,13 +335,13 @@ public class Game extends JPanel implements KeyListener, Runnable {
         levelCreator.getLevelAt(currentLevelIndex).drawLevel(g);
         // draw aimBall when controlling angle or strength
         if (!(levelViewerMode)) {
-	        if (aimMode||aimLocked) {
+	        if ((aimMode||aimLocked)&&onGround) {
 	        	g.setColor(new Color(0xd6d6d6));
 	        	g.fillOval(aimBallX, aimBallY, 20, 20);
 	        }
 	        // draw player
 	        g.setColor(new Color(0xD72638));
-	        g.fillRect(playerX, playerY, width, height);
+	        g.fillRect((int) Math.round(playerX), (int) Math.round(playerY), width, height);
         }
     }
 
