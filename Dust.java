@@ -17,7 +17,7 @@ public class Dust {
         x = 100;
         y = 100;
         alpha = 255;
-        color = new Color(255, 255, 255, alpha); // default block color
+        color = new Color(255, 255, 255, alpha);
     }
     
     public Dust(int x, int y) {
